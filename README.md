@@ -1,4 +1,5 @@
 This is the simple restaurant api
+
 There are 2 folders, one for client, one for server
 I already deploy the server to heroku, so when running the project, we don't need to run the server locally, only need to download the client side files.
 
