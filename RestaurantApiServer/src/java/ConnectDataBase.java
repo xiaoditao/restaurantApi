@@ -22,7 +22,7 @@ import org.json.JSONObject;
 
 /**
  *
- * The ConnectDataBase class helps input data from android to MangoDB
+ * The ConnectDataBase class helps connect to MangoDB
  * and get each record info from MangoDB
  */
 public class ConnectDataBase {
@@ -32,6 +32,8 @@ public class ConnectDataBase {
     /**
      *
      * Constructor, set up all the database settings
+     * I connect it to my own mongoDB cluster.
+     * My mangoDB account is a free account so it may not allow more than 100 collections to be added in the database
      */
     public ConnectDataBase() {
         MongoClientURI uri = new MongoClientURI(
@@ -41,16 +43,20 @@ public class ConnectDataBase {
         collection = database.getCollection("try1");
         map = new HashMap<>();
     }
-    
+    /**
+     * get the info that is requested by doGET on client side
+     * @param id the id of the section
+     * @return  the response from the server
+     */
     public String getDB(String id) {
         MongoCursor<Document> cursor = collection.find().iterator();
         String res = "";
         String record = "";
-        if (id.equals("none")){
-            
+        // if there is no id input, it means that the user want to see all the records
+        // so it iterates all the records and send back to the client
+        if (id.equals("none")){ 
             while (cursor.hasNext()) {
-                try {
-                    
+                try {     
                     JSONObject json = new JSONObject(cursor.next().toJson());
                     String temptID = (String)json.get("restaurantID");
                     String temptName = (String)json.get("name");
@@ -69,6 +75,8 @@ public class ConnectDataBase {
             }
             return res;
         }
+        // if the user specify the id, then it search the record with that id in database 
+        // and return the formatted json object to the user
         Document myDoc = collection.find(eq("restaurantID", id)).first();
         if(myDoc == null) return "";
         JSONObject json = new JSONObject(myDoc);
@@ -89,24 +97,31 @@ public class ConnectDataBase {
         }
         return res;
     }
-    
+    /**
+     * put new record that is requested by doGET on client side
+     * @param id the id of the section
+     * @param name the name of the section
+     * @return  the response from the server
+     */    
     public String postDB(String id, String name) {
         boolean flag = true;
         String res = "";
         try {
             Document myDoc = collection.find(eq("restaurantID", id)).first();
+            // if the record with the same id already exists,
+            // return error message
             if(myDoc != null) {
                 flag = false;
                 res = "error";
                 return res;
             }
+            // if everything goes well, format the json file and return back
             Document doc = new Document("restaurantID", id)
                     .append("name", name);
             collection.insertOne(doc);
             JSONObject inside = new JSONObject();
             JSONArray menu = new JSONArray();
             JSONObject outside = new JSONObject();
-            
             inside.put("id", id);
             inside.put("name", name);
             menu.put(inside);
@@ -120,22 +135,29 @@ public class ConnectDataBase {
         }
         return res;
     }
-    
+    /**
+     * edit new record that is requested by doGET on client side
+     * @param id the id of the section
+     * @param name the name of the section
+     * @return  the response from the server
+     */    
     public String putDB(String name,String id) {
         boolean flag = true;
         String res = "";
         try {
+            // if the record with the same id doesn't exist,
+            // return error message
             Document myDoc = collection.find(eq("restaurantID", id)).first();
             if(myDoc == null) {
                 flag = false;
                 res = "error, the record doest not exist";
                 return res;
             }
+            // if everything goes well, format the json file and return back
             collection.updateOne(eq("restaurantID", id), new Document("$set", new Document("restaurantID", id).append("name", name)));
             JSONObject inside = new JSONObject();
             JSONArray menu = new JSONArray();
-            JSONObject outside = new JSONObject();
-            
+            JSONObject outside = new JSONObject();           
             inside.put("id", id);
             inside.put("name", name);
             menu.put(inside);
@@ -149,7 +171,11 @@ public class ConnectDataBase {
         }
         return res;
     }
-    
+    /**
+     * delete new record that is requested by doGET on client side
+     * @param id the id of the section
+     * @return  the response from the server
+     */     
     public String deleteDB(String id) {
         Boolean flag = true;
         JSONObject res = new JSONObject();
